@@ -9,6 +9,20 @@ import {
 } from '../utils/sheetsConsumption';
 import { prisma } from '../utils/prisma';
 
+interface SyncInventoryItem {
+  id: string;
+  productName: string;
+  currentStock: number;
+  soldLast30Days: number;
+  leadTimeDays: number;
+  supplierName: string | null;
+  costPrice: number | null;
+  dailyUsage: number;
+  stockDays: number;
+  status: string;
+  recommendedQty: number;
+}
+
 export const consumptionRoutes = Router();
 
 consumptionRoutes.use(requireAuth);
@@ -39,7 +53,8 @@ consumptionRoutes.post('/google-sheets/sync', asyncHandler(async (req, res) => {
 
   const consumption = await fetchConsumptionSheet(sheetUrl);
   const matchedProducts = new Set<string>();
-  const recalculatedItems = latestUpload.items.map((item) => {
+  const uploadItems = latestUpload.items as SyncInventoryItem[];
+  const recalculatedItems = uploadItems.map((item: SyncInventoryItem) => {
     const normalizedName = normalizeProductName(item.productName);
     const total = consumption.totalsByProduct.get(normalizedName);
 
@@ -60,19 +75,19 @@ consumptionRoutes.post('/google-sheets/sync', asyncHandler(async (req, res) => {
       }),
     };
   });
-  const updatedItems = recalculatedItems.filter((item) =>
+  const updatedItems = recalculatedItems.filter((item: SyncInventoryItem) =>
     matchedProducts.has(normalizeProductName(item.productName)),
   );
   const unmatchedProducts = Array.from(consumption.totalsByProduct.entries())
     .filter(([productName]) => !matchedProducts.has(productName))
     .map(([, total]) => total.productName);
-  const urgentCount = recalculatedItems.filter((item) => item.status === 'Срочно').length;
-  const soonCount = recalculatedItems.filter((item) => item.status === 'Скоро').length;
-  const stopCount = recalculatedItems.filter((item) => item.status === 'В стопе').length;
+  const urgentCount = recalculatedItems.filter((item: SyncInventoryItem) => item.status === 'Срочно').length;
+  const soonCount = recalculatedItems.filter((item: SyncInventoryItem) => item.status === 'Скоро').length;
+  const stopCount = recalculatedItems.filter((item: SyncInventoryItem) => item.status === 'В стопе').length;
 
   const upload = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     await Promise.all(
-      updatedItems.map((item) =>
+      updatedItems.map((item: SyncInventoryItem) =>
         tx.inventoryItem.update({
           where: { id: item.id },
           data: {
