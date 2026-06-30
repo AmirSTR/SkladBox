@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { AlertCircle, Ban, CheckCircle, Clock, Download, FileSpreadsheet, FileText, Upload as UploadIcon } from 'lucide-react';
 import { apiFetch } from '../api';
 import { Header } from '../components/Header';
-import { ConsumptionSyncCard } from '../components/ConsumptionSyncCard';
 import { KpiCard } from '../components/KpiCard';
 import { OrderSummary } from '../components/OrderSummary';
 import { OrderTable } from '../components/OrderTable';
@@ -217,10 +216,6 @@ export function UploadPage() {
         <UploadCard onUploadClick={() => fileInputRef.current?.click()} />
       )}
 
-      <ConsumptionSyncCard
-        hasUpload={hasUploadedFile}
-        onSynced={setLatestUpload}
-      />
 
       <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
         <KpiCard
