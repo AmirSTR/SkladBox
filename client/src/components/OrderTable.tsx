@@ -1,6 +1,11 @@
 import { ClipboardList } from 'lucide-react';
 import type { InventoryItem, StockStatus } from '../types';
-import { formatCompactNumber, formatStockDays } from '../utils/calculations';
+import {
+  calculateLostSalesRisk,
+  formatCompactNumber,
+  formatCurrency,
+  formatStockDays,
+} from '../utils/calculations';
 
 interface OrderTableProps {
   items: InventoryItem[];
@@ -34,7 +39,7 @@ export function OrderTable({ items }: OrderTableProps) {
         </div>
       ) : (
         <div className="mt-6 overflow-x-auto">
-          <table className="w-full min-w-[760px] border-collapse text-left">
+          <table className="w-full min-w-[900px] border-collapse text-left">
             <thead>
               <tr className="border-b border-slate-200 text-sm font-medium text-muted">
                 <th className="pb-4 pr-5">Товар</th>
@@ -42,48 +47,59 @@ export function OrderTable({ items }: OrderTableProps) {
                 <th className="pb-4 pr-5">Хватит на</th>
                 <th className="pb-4 pr-5">Поставка</th>
                 <th className="pb-4 pr-5">Статус</th>
+                <th className="pb-4 pr-5">Риск</th>
                 <th className="pb-4 text-right">Заказать</th>
               </tr>
             </thead>
             <tbody>
-              {items.map((item) => (
-                <tr
-                  className="border-b border-slate-100 last:border-b-0"
-                  key={item.id}
-                >
-                  <td className="py-4 pr-5">
-                    <div>
-                      <p className="font-semibold text-ink">
-                        {item.productName}
-                      </p>
-                      {item.supplierName && (
-                        <p className="mt-1 text-sm text-muted">
-                          {item.supplierName}
+              {items.map((item) => {
+                const risk = calculateLostSalesRisk(item);
+                const riskValue = risk.amount === null
+                  ? `${formatCompactNumber(risk.units)} шт.`
+                  : formatCurrency(risk.amount);
+
+                return (
+                  <tr
+                    className="border-b border-slate-100 last:border-b-0"
+                    key={item.id}
+                  >
+                    <td className="py-4 pr-5">
+                      <div>
+                        <p className="font-semibold text-ink">
+                          {item.productName}
                         </p>
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-4 pr-5 text-ink">
-                    {formatCompactNumber(item.currentStock)}
-                  </td>
-                  <td className="py-4 pr-5 text-ink">
-                    {formatStockDays(item.stockDays)}
-                  </td>
-                  <td className="py-4 pr-5 text-ink">
-                    {formatCompactNumber(item.leadTimeDays)} дн.
-                  </td>
-                  <td className="py-4 pr-5">
-                    <span
-                      className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ${badgeClasses[item.status]}`}
-                    >
-                      {item.status}
-                    </span>
-                  </td>
-                  <td className="py-4 text-right text-base font-bold text-teal-700">
-                    {formatCompactNumber(item.recommendedQty)}
-                  </td>
-                </tr>
-              ))}
+                        {item.supplierName && (
+                          <p className="mt-1 text-sm text-muted">
+                            {item.supplierName}
+                          </p>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-4 pr-5 text-ink">
+                      {formatCompactNumber(item.currentStock)}
+                    </td>
+                    <td className="py-4 pr-5 text-ink">
+                      {formatStockDays(item.stockDays)}
+                    </td>
+                    <td className="py-4 pr-5 text-ink">
+                      {formatCompactNumber(item.leadTimeDays)} дн.
+                    </td>
+                    <td className="py-4 pr-5">
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-sm font-semibold ${badgeClasses[item.status]}`}
+                      >
+                        {item.status}
+                      </span>
+                    </td>
+                    <td className="py-4 pr-5 font-semibold text-danger-600">
+                      {riskValue}
+                    </td>
+                    <td className="py-4 text-right text-base font-bold text-teal-700">
+                      {formatCompactNumber(item.recommendedQty)}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

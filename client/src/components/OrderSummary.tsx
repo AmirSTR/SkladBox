@@ -1,10 +1,12 @@
-import { Package, Users, Wallet } from 'lucide-react';
-import { formatCurrency } from '../utils/calculations';
+import { Package, TrendingDown, Users, Wallet } from 'lucide-react';
+import { formatCompactNumber, formatCurrency } from '../utils/calculations';
 
 interface OrderSummaryProps {
   supplierCount: number | null;
   positionsCount: number;
   budget: number | null;
+  lostSalesRisk: number | null;
+  lostSalesRiskUnits: number;
   hasUploadedFile: boolean;
   isCreatingOrder?: boolean;
   onCreateOrder: () => void | Promise<void>;
@@ -14,6 +16,8 @@ export function OrderSummary({
   supplierCount,
   positionsCount,
   budget,
+  lostSalesRisk,
+  lostSalesRiskUnits,
   hasUploadedFile,
   isCreatingOrder = false,
   onCreateOrder,
@@ -27,6 +31,11 @@ export function OrderSummary({
     ? budget === null
       ? '—'
       : formatCurrency(budget)
+    : '0 ₽';
+  const riskValue = hasUploadedFile
+    ? lostSalesRisk === null
+      ? `${formatCompactNumber(lostSalesRiskUnits)} шт.`
+      : formatCurrency(lostSalesRisk)
     : '0 ₽';
   const canCreateOrder = positionsCount > 0;
 
@@ -43,6 +52,11 @@ export function OrderSummary({
           icon={Wallet}
           label="Ориентировочный бюджет"
           value={budgetValue}
+        />
+        <SummaryRow
+          icon={TrendingDown}
+          label="Риск потери продаж"
+          value={riskValue}
         />
       </div>
 

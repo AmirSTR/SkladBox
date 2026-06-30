@@ -5,9 +5,16 @@ import { Header } from '../components/Header';
 import { KpiCard } from '../components/KpiCard';
 import { OrderSummary } from '../components/OrderSummary';
 import { OrderTable } from '../components/OrderTable';
+import { SupplierOrders } from '../components/SupplierOrders';
 import { UploadCard } from '../components/UploadCard';
 import type { Upload } from '../types';
-import { getOrderItems } from '../utils/calculations';
+import {
+  getOrderItems,
+  groupOrderItemsBySupplier,
+  sumLostSalesRisk,
+  sumLostSalesUnits,
+  sumOrderBudget,
+} from '../utils/calculations';
 import { downloadOrder, downloadTemplate } from '../utils/excel';
 
 const FILE_ERROR =
@@ -44,6 +51,10 @@ export function UploadPage() {
 
   const items = latestUpload?.items ?? [];
   const orderItems = useMemo(() => getOrderItems(items), [items]);
+  const supplierOrderGroups = useMemo(
+    () => groupOrderItemsBySupplier(orderItems),
+    [orderItems],
+  );
   const supplierCount = useMemo(() => {
     if (!latestUpload) {
       return 0;
@@ -68,11 +79,23 @@ export function UploadPage() {
       return null;
     }
 
-    return orderItems.reduce(
-      (sum, item) => sum + item.recommendedQty * (item.costPrice ?? 0),
-      0,
-    );
+    return sumOrderBudget(orderItems);
   }, [latestUpload, orderItems]);
+  const lostSalesRisk = useMemo(() => {
+    if (!latestUpload) {
+      return 0;
+    }
+
+    if (!latestUpload.hasCostColumn) {
+      return null;
+    }
+
+    return sumLostSalesRisk(orderItems);
+  }, [latestUpload, orderItems]);
+  const lostSalesRiskUnits = useMemo(
+    () => (latestUpload ? sumLostSalesUnits(orderItems) : 0),
+    [latestUpload, orderItems],
+  );
 
   async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -226,11 +249,15 @@ export function UploadPage() {
           budget={budget}
           hasUploadedFile={hasUploadedFile}
           isCreatingOrder={isCreatingOrder}
+          lostSalesRisk={lostSalesRisk}
+          lostSalesRiskUnits={lostSalesRiskUnits}
           onCreateOrder={handleCreateOrder}
           positionsCount={orderItems.length}
           supplierCount={supplierCount}
         />
       </section>
+
+      <SupplierOrders groups={supplierOrderGroups} />
     </>
   );
 }
