@@ -40,3 +40,14 @@ export interface Supplier {
   name: string;
   createdAt: string;
 }
+
+export interface ConsumptionSyncSummary {
+  rowsRead: number;
+  rowsUsed: number;
+  ignoredRows: number;
+  productsUpdated: number;
+  unmatchedProducts: string[];
+  unmatchedProductsCount: number;
+  periodDays: number;
+  syncedAt: string;
+}

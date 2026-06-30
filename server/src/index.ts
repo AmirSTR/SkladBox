@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import express, { type NextFunction, type Request, type Response } from 'express';
 import path from 'path';
 import { authRoutes } from './routes/auth';
+import { consumptionRoutes } from './routes/consumption';
 import { settingsRoutes } from './routes/settings';
 import { supplierRoutes } from './routes/suppliers';
 import { uploadRoutes } from './routes/uploads';
@@ -21,6 +22,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/consumption', consumptionRoutes);
 app.use('/api/uploads', uploadRoutes);
 app.use('/api/suppliers', supplierRoutes);
 app.use('/api', settingsRoutes);
