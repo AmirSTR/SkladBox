@@ -56,9 +56,9 @@ export function OrderTable({ items }: OrderTableProps) {
                       <p className="font-semibold text-ink">
                         {item.productName}
                       </p>
-                      {item.supplier && (
+                      {item.supplierName && (
                         <p className="mt-1 text-sm text-muted">
-                          {item.supplier}
+                          {item.supplierName}
                         </p>
                       )}
                     </div>
@@ -80,7 +80,7 @@ export function OrderTable({ items }: OrderTableProps) {
                     </span>
                   </td>
                   <td className="py-4 text-right text-base font-bold text-teal-700">
-                    {formatCompactNumber(item.orderQuantity)}
+                    {formatCompactNumber(item.recommendedQty)}
                   </td>
                 </tr>
               ))}

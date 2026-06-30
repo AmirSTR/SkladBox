@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Company {
+  id        String          @id @default(uuid())
+  name      String
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  users     User[]
+  suppliers Supplier[]
+  uploads   Upload[]
+  items     InventoryItem[]
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  companyId    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  uploads      Upload[]
+}
+
+model Supplier {
+  id        String   @id @default(uuid())
+  name      String
+  companyId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, name])
+}
+
+model Upload {
+  id                String          @id @default(uuid())
+  fileName          String
+  totalItems        Int             @default(0)
+  urgentCount       Int             @default(0)
+  soonCount         Int             @default(0)
+  stopCount         Int             @default(0)
+  hasSupplierColumn Boolean         @default(false)
+  hasCostColumn     Boolean         @default(false)
+  companyId         String
+  userId            String
+  createdAt         DateTime        @default(now())
+  company           Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items             InventoryItem[]
+}
+
+model InventoryItem {
+  id              String   @id @default(uuid())
+  productName     String
+  currentStock    Float
+  soldLast30Days  Float
+  leadTimeDays    Float
+  supplierName    String?
+  costPrice       Float?
+  dailyUsage      Float
+  stockDays       Float
+  status          String
+  recommendedQty  Int
+  companyId       String
+  uploadId        String
+  createdAt       DateTime @default(now())
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  upload          Upload   @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+}

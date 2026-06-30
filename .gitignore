@@ -2,4 +2,8 @@ node_modules
 dist
 dev-server.log
 dev-server.err.log
+server-runtime.log
+server-runtime.err.log
 *.tsbuildinfo
+.env
+server/.env

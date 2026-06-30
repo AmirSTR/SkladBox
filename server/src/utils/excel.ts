@@ -1,4 +1,5 @@
-import type { InventoryRow, ParsedInventory } from '../types';
+import * as XLSX from 'xlsx';
+import type { ParsedInventoryRow } from './calculations';
 
 const REQUIRED_HEADERS = [
   'Товар',
@@ -9,70 +10,57 @@ const REQUIRED_HEADERS = [
 
 const OPTIONAL_HEADERS = ['Поставщик', 'Себестоимость'] as const;
 
-const TEMPLATE_HEADERS = [...REQUIRED_HEADERS, ...OPTIONAL_HEADERS];
+export interface ParsedWorkbook {
+  rows: ParsedInventoryRow[];
+  hasSupplierColumn: boolean;
+  hasCostColumn: boolean;
+}
 
-export async function parseInventoryFile(file: File): Promise<ParsedInventory> {
-  const XLSX = await import('xlsx');
-  const buffer = await file.arrayBuffer();
-  const workbook = XLSX.read(buffer, { type: 'array' });
+export const EXCEL_READ_ERROR =
+  'Не удалось прочитать файл. Проверьте названия колонок.';
+
+export function parseInventoryWorkbook(buffer: Buffer): ParsedWorkbook {
+  const workbook = XLSX.read(buffer, { type: 'buffer' });
   const firstSheetName = workbook.SheetNames[0];
   const sheet = firstSheetName ? workbook.Sheets[firstSheetName] : null;
 
   if (!sheet) {
-    throw new Error('Empty workbook');
+    throw new Error(EXCEL_READ_ERROR);
   }
 
-  const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
+  const rawRows = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
     header: 1,
     defval: '',
     raw: false,
   });
-
-  const headers = (rows[0] ?? []).map((value) => String(value));
+  const headers = (rawRows[0] ?? []).map((value) => String(value));
   const headerIndex = createHeaderIndex(headers);
   const hasRequiredHeaders = REQUIRED_HEADERS.every((header) =>
     headerIndex.has(normalizeHeader(header)),
   );
 
   if (!hasRequiredHeaders) {
-    throw new Error('Missing required columns');
+    throw new Error(EXCEL_READ_ERROR);
   }
 
   const hasSupplierColumn = headerIndex.has(normalizeHeader('Поставщик'));
   const hasCostColumn = headerIndex.has(normalizeHeader('Себестоимость'));
-  const inventoryRows = rows
+  const rows = rawRows
     .slice(1)
     .map((row) => toInventoryRow(row, headerIndex))
-    .filter((row): row is InventoryRow => Boolean(row?.productName));
+    .filter((row): row is ParsedInventoryRow => Boolean(row?.productName));
 
   return {
-    rows: inventoryRows,
+    rows,
     hasSupplierColumn,
     hasCostColumn,
   };
 }
 
-export async function downloadTemplate(): Promise<void> {
-  const XLSX = await import('xlsx');
-  const example = [
-    'Молоко 3,2%',
-    12,
-    90,
-    4,
-    'Молочная база',
-    85,
-  ];
-  const sheet = XLSX.utils.aoa_to_sheet([TEMPLATE_HEADERS, example]);
-  const workbook = XLSX.utils.book_new();
-
-  XLSX.utils.book_append_sheet(workbook, sheet, 'Остатки');
-  XLSX.writeFile(workbook, 'antistop-template.xlsx');
-}
-
 function toInventoryRow(
   row: unknown[],
   headerIndex: Map<string, number>,
-): InventoryRow | null {
+): ParsedInventoryRow | null {
   const productName = readText(row, headerIndex, 'Товар');
 
   if (!productName) {
@@ -84,8 +72,8 @@ function toInventoryRow(
     currentStock: readNumber(row, headerIndex, 'Остаток сейчас'),
     soldLast30Days: readNumber(row, headerIndex, 'Продано за 30 дней'),
     leadTimeDays: readNumber(row, headerIndex, 'Срок поставки, дней'),
-    supplier: readText(row, headerIndex, 'Поставщик') || undefined,
-    cost: readOptionalNumber(row, headerIndex, 'Себестоимость'),
+    supplierName: readText(row, headerIndex, 'Поставщик') || undefined,
+    costPrice: readOptionalNumber(row, headerIndex, 'Себестоимость'),
   };
 }
 
@@ -131,9 +119,7 @@ function readOptionalNumber(
   headerIndex: Map<string, number>,
   header: string,
 ): number | undefined {
-  const normalizedHeader = normalizeHeader(header);
-
-  if (!headerIndex.has(normalizedHeader)) {
+  if (!headerIndex.has(normalizeHeader(header))) {
     return undefined;
   }
 
