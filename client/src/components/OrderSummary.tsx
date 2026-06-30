@@ -6,6 +6,8 @@ interface OrderSummaryProps {
   positionsCount: number;
   budget: number | null;
   hasUploadedFile: boolean;
+  isCreatingOrder?: boolean;
+  onCreateOrder: () => void | Promise<void>;
 }
 
 export function OrderSummary({
@@ -13,6 +15,8 @@ export function OrderSummary({
   positionsCount,
   budget,
   hasUploadedFile,
+  isCreatingOrder = false,
+  onCreateOrder,
 }: OrderSummaryProps) {
   const supplierValue = hasUploadedFile
     ? supplierCount === null
@@ -44,13 +48,11 @@ export function OrderSummary({
 
       <button
         className="mt-7 min-h-14 w-full rounded-2xl bg-teal-600 px-5 text-base font-semibold text-white shadow-sm transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
-        disabled={!canCreateOrder}
-        onClick={() => {
-          window.alert('Заказ сформирован для выбранных позиций.');
-        }}
+        disabled={!canCreateOrder || isCreatingOrder}
+        onClick={() => void onCreateOrder()}
         type="button"
       >
-        Сформировать заказ
+        {isCreatingOrder ? 'Формируем заказ...' : 'Сформировать заказ'}
       </button>
     </aside>
   );

@@ -8,7 +8,7 @@ import { OrderTable } from '../components/OrderTable';
 import { UploadCard } from '../components/UploadCard';
 import type { Upload } from '../types';
 import { getOrderItems } from '../utils/calculations';
-import { downloadTemplate } from '../utils/excel';
+import { downloadOrder, downloadTemplate } from '../utils/excel';
 
 const FILE_ERROR =
   'Не удалось прочитать файл. Проверьте названия колонок.';
@@ -17,6 +17,7 @@ export function UploadPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [latestUpload, setLatestUpload] = useState<Upload | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -104,6 +105,23 @@ export function UploadPage() {
     } finally {
       setIsUploading(false);
       event.target.value = '';
+    }
+  }
+
+  async function handleCreateOrder() {
+    if (orderItems.length === 0) {
+      return;
+    }
+
+    setIsCreatingOrder(true);
+    setError(null);
+
+    try {
+      await downloadOrder(orderItems);
+    } catch {
+      setError('Не удалось сформировать заказ. Попробуйте еще раз.');
+    } finally {
+      setIsCreatingOrder(false);
     }
   }
 
@@ -207,6 +225,8 @@ export function UploadPage() {
         <OrderSummary
           budget={budget}
           hasUploadedFile={hasUploadedFile}
+          isCreatingOrder={isCreatingOrder}
+          onCreateOrder={handleCreateOrder}
           positionsCount={orderItems.length}
           supplierCount={supplierCount}
         />
